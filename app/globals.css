@@ -1,0 +1,882 @@
+﻿@import 'tailwindcss';
+
+/* ==========================================================================
+   Цвет, который перетекает
+
+   Обычная переменная стилей — просто строка, и браузер не умеет её плавно
+   менять: свет переключался бы рывком. Объявив переменную через @property с
+   типом <color>, мы говорим браузеру, что там настоящий цвет, — и он начинает
+   его интерполировать.
+
+   Начальные значения обязаны совпадать с палитрой зала в lib/works.ts.
+   ========================================================================== */
+
+@property --base {
+  syntax: '<color>';
+  inherits: true;
+  initial-value: #0c0d0f;
+}
+@property --surface {
+  syntax: '<color>';
+  inherits: true;
+  initial-value: #14161a;
+}
+@property --ink {
+  syntax: '<color>';
+  inherits: true;
+  initial-value: #f0f1f3;
+}
+@property --ink-dim {
+  syntax: '<color>';
+  inherits: true;
+  initial-value: #8c929b;
+}
+@property --accent {
+  syntax: '<color>';
+  inherits: true;
+  initial-value: #e4572e;
+}
+
+@theme {
+  --font-display: var(--font-inter-tight), ui-sans-serif, system-ui, sans-serif;
+  --font-mono: var(--font-jetbrains), ui-monospace, monospace;
+}
+
+:root {
+  color-scheme: dark;
+  --measure: 60ch;
+  --measure-lead: 28ch;
+  --rail: clamp(20px, 5vw, 88px);
+
+  --ease-out: cubic-bezier(0.22, 1, 0.36, 1);
+  --ease-entrance: cubic-bezier(0.16, 1, 0.3, 1);
+
+  --dur-micro: 160ms;
+  --dur-ui: 340ms;
+  --dur-morph: 1100ms;
+
+  /* Дуга. Одна форма на весь сайт: ею вырезан и кадр на сцене, и лицо раздела
+     под курсором. Поэтому выбор выглядит обещанием того, что будет дальше. */
+  --arc: ellipse(104% 152% at 100% 50%);
+
+  transition:
+    --base var(--dur-morph) var(--ease-entrance),
+    --surface var(--dur-morph) var(--ease-entrance),
+    --ink var(--dur-morph) var(--ease-entrance),
+    --ink-dim var(--dur-morph) var(--ease-entrance),
+    --accent var(--dur-morph) var(--ease-entrance);
+  background-color: var(--base);
+
+  --line: color-mix(in srgb, var(--ink) 11%, transparent);
+  --accent-wash: color-mix(in srgb, var(--accent) 16%, transparent);
+  --accent-glow: color-mix(in srgb, var(--accent) 34%, transparent);
+}
+
+* {
+  box-sizing: border-box;
+  min-width: 0;
+}
+html {
+  -webkit-text-size-adjust: 100%;
+  scroll-behavior: smooth;
+}
+body {
+  margin: 0;
+  background-color: var(--base);
+  color: var(--ink);
+  font-family: var(--font-display);
+  font-size: clamp(15px, 0.4vw + 14px, 17px);
+  line-height: 1.6;
+  -webkit-font-smoothing: antialiased;
+  overflow-x: hidden;
+}
+h1,
+h2 {
+  margin: 0;
+  font-weight: 500;
+  text-wrap: balance;
+}
+p {
+  margin: 0;
+  text-wrap: pretty;
+}
+a {
+  color: inherit;
+  text-decoration: none;
+}
+button {
+  font: inherit;
+  color: inherit;
+  background: none;
+  border: none;
+  padding: 0;
+  cursor: pointer;
+}
+:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 3px;
+}
+::selection {
+  background: var(--accent);
+  color: var(--base);
+}
+
+.skip-link {
+  position: absolute;
+  left: -9999px;
+  z-index: 100;
+  padding: 12px 20px;
+  background: var(--surface);
+  border: 1px solid var(--line);
+}
+.skip-link:focus {
+  left: 12px;
+  top: 12px;
+}
+
+.label {
+  font-family: var(--font-mono);
+  font-size: clamp(10px, 0.15vw + 9.5px, 11px);
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: var(--ink-dim);
+}
+.caption {
+  font-size: clamp(13px, 0.15vw + 12px, 14px);
+  line-height: 1.55;
+  color: var(--ink-dim);
+}
+.rail {
+  padding-inline: var(--rail);
+}
+
+/* Плёнка зерна: убирает цифровую стерильность тёмных заливок и не даёт
+   крупным градиентам полосить ступенями. */
+.grain {
+  position: fixed;
+  inset: 0;
+  z-index: 90;
+  pointer-events: none;
+  opacity: 0.035;
+  mix-blend-mode: overlay;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='140' height='140'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='3'/%3E%3C/filter%3E%3Crect width='140' height='140' filter='url(%23n)'/%3E%3C/svg%3E");
+}
+
+/* -------------------------------------------------------------- шапка --- */
+
+.site-header {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  z-index: 60;
+  height: 66px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 24px;
+  mix-blend-mode: difference;
+}
+.wordmark {
+  font-weight: 500;
+  letter-spacing: -0.025em;
+  font-size: clamp(17px, 0.5vw + 15px, 22px);
+  color: #fff;
+  transition:
+    opacity var(--dur-ui) var(--ease-out),
+    transform var(--dur-ui) var(--ease-out);
+}
+.wordmark span {
+  opacity: 0.6;
+}
+
+/* Пока герой на экране, подпись в шапке молчит: крупная стоит в самом герое,
+   а две одинаковые надписи одна под другой читаются как ошибка вёрстки. */
+.site-header[data-muted] .wordmark {
+  opacity: 0;
+  transform: translateY(-6px);
+  pointer-events: none;
+}
+.site-header__hint {
+  color: #fff;
+  opacity: 0.55;
+}
+
+/* ---------------------------------------------------------------- герой --- */
+
+/*
+ * Первый экран — стена работ.
+ *
+ * Прежние заходы упирались в одно: экран уходил на посредника. Сначала три
+ * карточки разделов, потом список названий, потом одна работа во весь кадр и
+ * полоса разделов внизу. Во всех трёх случаях посетитель сперва выбирал, куда
+ * посмотреть, и только потом видел сами работы.
+ *
+ * Здесь работы показаны сразу и все. Каждая плитка — дверь в продукт, раздел
+ * остался подписью над рядом. Наведение зажигает плитку и заливает зал её
+ * светом; нажатие открывает работу целиком.
+ */
+.hero {
+  position: relative;
+  min-height: 100svh;
+  display: grid;
+  grid-template-rows: auto 1fr;
+  align-content: start;
+  padding-top: 66px;
+  padding-bottom: clamp(28px, 5vh, 64px);
+}
+
+@keyframes rise {
+  from {
+    opacity: 0;
+    transform: translateY(24px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+.hero__mast {
+  padding-block: clamp(14px, 2.4vh, 30px) clamp(10px, 1.6vh, 18px);
+  animation: rise 900ms var(--ease-entrance) both;
+}
+
+/* Подпись мастерской: с первого взгляда должно читаться, чья это витрина. */
+.hero__studio {
+  font-size: clamp(24px, 1.8vw + 15px, 36px);
+  line-height: 1;
+  letter-spacing: -0.035em;
+  font-weight: 500;
+  margin-bottom: clamp(7px, 1.1vh, 12px);
+}
+.hero__studio span {
+  color: var(--ink-dim);
+}
+
+.hero__claim {
+  font-size: clamp(18px, 0.9vw + 14px, 26px);
+  line-height: 1.3;
+  letter-spacing: -0.02em;
+  font-weight: 400;
+  color: var(--ink-dim);
+  max-width: 58ch;
+}
+.hero__claim em {
+  font-style: normal;
+  font-weight: 500;
+  color: var(--ink);
+}
+
+/* --------------------------------------------------------- полосы работ --- */
+
+/*
+ * Каждый раздел — своя полоса: подпись слева, ряд работ справа.
+ *
+ * Общая сетка из тринадцати плиток не отвечала на вопрос «что здесь вообще
+ * есть» — она читалась как свалка. Полоса отвечает сразу: вот сервисы, вот
+ * сайты, вот игры. Ряд листается вбок, поэтому длина раздела не растягивает
+ * страницу вниз и все четыре полосы держатся на одном экране.
+ */
+.bands {
+  display: grid;
+  gap: clamp(10px, 1.6vh, 20px);
+  align-content: start;
+}
+
+.band {
+  display: grid;
+  gap: clamp(6px, 0.8vh, 10px);
+}
+
+.band__label {
+  display: flex;
+  align-items: baseline;
+  gap: 8px 16px;
+  flex-wrap: wrap;
+}
+.band__name {
+  font-size: clamp(17px, 0.8vw + 14px, 24px);
+  line-height: 1;
+  letter-spacing: -0.03em;
+  font-weight: 500;
+}
+.band__count {
+  color: var(--accent);
+}
+.band__lure {
+  margin-left: auto;
+  opacity: 0.75;
+}
+@media (max-width: 720px) {
+  .band__lure {
+    display: none;
+  }
+}
+
+/* Ряд листается вбок и прилипает к плиткам. Поля равны рельсу страницы,
+   поэтому первая плитка стоит на общей вертикали, а последняя не липнет
+   к краю экрана. */
+.band__row {
+  list-style: none;
+  margin: 0;
+  padding: 2px var(--rail);
+  display: flex;
+  gap: clamp(8px, 0.9vw, 14px);
+  overflow-x: auto;
+  overscroll-behavior-x: contain;
+  scroll-snap-type: x proximity;
+  scrollbar-width: none;
+}
+.band__row::-webkit-scrollbar {
+  display: none;
+}
+.band__row > li {
+  flex: 0 0 clamp(132px, 12.5vw, 168px);
+  scroll-snap-align: start;
+}
+
+/* Полоса-ведущая: её работы крупнее, потому что это действующие сервисы. */
+.band[data-lead] .band__row > li {
+  flex: 0 0 clamp(200px, 20vw, 268px);
+}
+.band[data-lead] .band__name {
+  color: var(--accent);
+}
+
+/* ----------------------------------------------------------- стена работ --- */
+
+/* Одна сетка на все работы. Разбивка по разделам делала стену вдвое выше
+   экрана — работы уезжали за нижний край, и первый экран снова показывал
+   заголовки вместо работ. Раздел теперь подписан на самой плитке. */
+.wall {
+  list-style: none;
+  margin: 0;
+  padding-block: 0 clamp(12px, 2vh, 24px);
+  display: grid;
+  gap: clamp(8px, 1vw, 14px);
+  align-content: start;
+  /* Плитки крупные: место освободилось за счёт короткого текста наверху.
+     Работы должны читаться, а не намекать на себя. */
+  grid-template-columns: repeat(auto-fill, minmax(clamp(148px, 15.2vw, 198px), 1fr));
+  animation: rise 900ms var(--ease-entrance) both;
+  animation-delay: 160ms;
+}
+
+/* Крупные плитки задают ритм. Ровная сетка из тринадцати одинаковых
+   прямоугольников читается как каталог, а не как витрина. */
+/* Главные работы занимают два столбца, но один ряд. Квадрат два на два съедал
+   четыре клетки на каждую, и стена вырастала до пяти рядов — работы уходили
+   за нижний край. Широкая полоса даёт то же первенство и не ломает сетку. */
+@media (min-width: 900px) {
+  .wall__wide {
+    grid-column: span 2;
+  }
+  .wall__wide .tile__media {
+    aspect-ratio: 2 / 1;
+  }
+  .wall__wide .tile__name {
+    font-size: clamp(17px, 0.6vw + 15px, 22px);
+  }
+}
+
+/* ------------------------------------------------------------- плитка --- */
+
+.tile {
+  position: relative;
+  display: grid;
+  gap: 8px;
+  width: 100%;
+  text-align: left;
+  padding: 0;
+}
+
+.tile__media {
+  position: relative;
+  display: block;
+  overflow: hidden;
+  aspect-ratio: 16 / 10;
+  background-color: var(--plate);
+  border: 1px solid var(--line);
+  transition:
+    border-color var(--dur-ui) var(--ease-out),
+    transform var(--dur-ui) var(--ease-out);
+}
+.tile__media img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  object-position: center top;
+  display: block;
+  /* Непогашенная плитка притушена, зажжённая выходит в полную силу: свет
+     показывает, куда смотрит зал, и не требует ни рамок, ни подписей.
+     Ниже семидесяти процентов стена начинает выглядеть выцветшей. */
+  opacity: 0.78;
+  transform: scale(1.01);
+  transition:
+    opacity var(--dur-ui) var(--ease-out),
+    transform 900ms var(--ease-out);
+}
+
+.tile:hover .tile__media,
+.tile:focus-visible .tile__media,
+.tile[data-lit] .tile__media {
+  border-color: var(--accent);
+}
+.tile:hover .tile__media img,
+.tile:focus-visible .tile__media img,
+.tile[data-lit] .tile__media img {
+  opacity: 1;
+  transform: scale(1.06);
+}
+
+/* Работа без кадра: не пустая дыра, а собственный цвет с точкой акцента. */
+.tile__blank {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-items: center;
+}
+.tile__blank::after {
+  content: '';
+  width: 9px;
+  height: 9px;
+  border-radius: 50%;
+  background-color: var(--dot);
+}
+
+.tile__foot {
+  display: flex;
+  align-items: baseline;
+  gap: 10px;
+  min-height: 20px;
+}
+.tile__name {
+  font-size: clamp(14px, 0.4vw + 13px, 17px);
+  line-height: 1.2;
+  letter-spacing: -0.02em;
+  font-weight: 500;
+  color: var(--ink-dim);
+  transition: color var(--dur-ui) var(--ease-out);
+}
+.tile:hover .tile__name,
+.tile:focus-visible .tile__name,
+.tile[data-lit] .tile__name {
+  color: var(--ink);
+}
+/* Ярлык лежит на самом кадре: в подписи под ним он воевал бы за место
+   с названием и разделом. */
+.tile__badge {
+  position: absolute;
+  top: 7px;
+  left: 7px;
+  z-index: 1;
+  padding: 3px 7px;
+  background-color: color-mix(in srgb, var(--plate) 82%, transparent);
+  border: 1px solid var(--accent);
+  color: var(--accent);
+  white-space: nowrap;
+}
+
+.tile__section {
+  margin-left: auto;
+  white-space: nowrap;
+  opacity: 0.75;
+}
+
+/* ---------------------------------------------------------------- сцена --- */
+
+.stage {
+  position: relative;
+  min-height: 100svh;
+  display: grid;
+  align-items: center;
+  overflow: hidden;
+  padding-block: clamp(88px, 12vh, 140px);
+}
+
+/*
+ * Фон текста, перетекающий в картинку.
+ *
+ * Дуга сама по себе читаемость не гарантирует: длинная строка дотягивается
+ * туда, где изображение уже проступило. Эта заливка держит левую половину
+ * тёмной независимо от того, какой кадр стоит и какой он яркости, — и она же
+ * делает стык мягким.
+ */
+.stage::before {
+  content: '';
+  position: absolute;
+  inset: 0 auto 0 0;
+  width: 78%;
+  z-index: 1;
+  pointer-events: none;
+  background: linear-gradient(
+    to right,
+    var(--base) 0%,
+    var(--base) 34%,
+    color-mix(in srgb, var(--base) 78%, transparent) 58%,
+    transparent 100%
+  );
+  transition: background var(--dur-morph) var(--ease-entrance);
+}
+
+/*
+ * Кадр во весь экран. Левый край вырезан дугой, и вдоль дуги изображение
+ * растворяется в цвете зала: граница не режет, а перетекает. Текст лежит на
+ * тёмной стороне и всегда читается — за это отвечает вуаль, а не удача.
+ */
+.canvas {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  animation: canvas-in 1200ms var(--ease-entrance) both;
+}
+.canvas__arc {
+  position: absolute;
+  inset: 0 0 0 26%;
+  clip-path: var(--arc);
+  overflow: hidden;
+  transition: background-color var(--dur-morph) var(--ease-entrance);
+}
+.canvas__arc img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  object-position: center top;
+  display: block;
+  transform: scale(1.02);
+}
+/* Растворение самой картинки вдоль дуги — поверх общей заливки. */
+.canvas__veil {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(
+    to right,
+    var(--base) 0%,
+    color-mix(in srgb, var(--base) 45%, transparent) 22%,
+    transparent 52%
+  );
+}
+/* Свет, ложащийся в зал со стороны кадра. */
+.canvas__rim {
+  position: absolute;
+  inset: -15% -10% -15% 8%;
+  background: radial-gradient(52% 58% at 62% 50%, var(--accent-glow), transparent 70%);
+  opacity: 0.55;
+}
+
+@keyframes canvas-in {
+  from {
+    opacity: 0;
+    transform: translateX(7%) scale(1.03);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+.stage__copy {
+  position: relative;
+  z-index: 2;
+  display: grid;
+  gap: clamp(24px, 3vw, 40px);
+  width: 100%;
+}
+@media (min-width: 1100px) {
+  .stage__copy {
+    grid-template-columns: 126px minmax(0, 42ch);
+    align-items: start;
+  }
+}
+
+/* --------------------------------------------------------------- список --- */
+
+.rail-nav {
+  display: grid;
+  gap: 16px;
+  align-content: start;
+}
+.rail-nav__back {
+  justify-self: start;
+  transition: color var(--dur-micro) var(--ease-out);
+}
+.rail-nav__back:hover {
+  color: var(--accent);
+}
+.rail-nav ol {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 2px 18px;
+}
+@media (min-width: 1100px) {
+  .rail-nav ol {
+    display: grid;
+    gap: 2px;
+  }
+}
+.rail-nav button {
+  display: flex;
+  align-items: baseline;
+  gap: 10px;
+  padding: 5px 0;
+  color: var(--ink-dim);
+  transition: color var(--dur-ui) var(--ease-out);
+}
+.rail-nav button:hover {
+  color: var(--ink);
+}
+.rail-nav button[aria-current='true'] {
+  color: var(--accent);
+}
+.rail-nav button .label {
+  color: inherit;
+}
+.rail-nav__name {
+  font-size: 14px;
+  letter-spacing: -0.01em;
+}
+
+/* -------------------------------------------------------------- рассказ --- */
+
+.details {
+  display: grid;
+  gap: 16px;
+  animation: rise 850ms var(--ease-entrance) both;
+  animation-delay: 140ms;
+}
+.details__meta {
+  color: var(--accent);
+  font-variant-numeric: tabular-nums;
+}
+.details__title {
+  font-size: clamp(34px, 4.6vw, 70px);
+  line-height: 0.98;
+  letter-spacing: -0.045em;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 8px 14px;
+}
+.details__badge {
+  padding: 4px 10px;
+  border: 1px solid var(--accent);
+  color: var(--accent);
+  white-space: nowrap;
+}
+
+/* Честная приписка о положении дел: невышедшая игра не должна выглядеть
+   вышедшей, а рекламный шаблон — настоящим заведением. */
+.details__status {
+  font-size: 13px;
+  line-height: 1.55;
+  max-width: var(--measure);
+  padding: 12px 14px;
+  background-color: color-mix(in srgb, var(--surface) 80%, transparent);
+  border-left: 2px solid var(--ink-dim);
+  color: var(--ink-dim);
+}
+.details__tagline {
+  font-size: clamp(16px, 0.5vw + 15px, 19px);
+  line-height: 1.42;
+  color: var(--ink-dim);
+  max-width: var(--measure-lead);
+}
+.details__premise {
+  max-width: var(--measure);
+}
+.details__notes {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 9px;
+}
+.details__notes li {
+  font-size: clamp(13px, 0.15vw + 12px, 14px);
+  line-height: 1.5;
+  color: var(--ink-dim);
+  max-width: var(--measure);
+  padding-left: 16px;
+  border-left: 1px solid var(--line);
+}
+.details__warning {
+  font-size: 13px;
+  line-height: 1.5;
+  max-width: var(--measure);
+  padding: 12px 14px;
+  background-color: var(--accent-wash);
+  border-left: 2px solid var(--accent);
+}
+.details__actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 14px 26px;
+  margin-top: 6px;
+}
+.details__open {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  padding: 13px 26px;
+  border: 1px solid var(--accent);
+  color: var(--accent);
+  font-size: 14px;
+  transition:
+    background-color var(--dur-ui) var(--ease-out),
+    color var(--dur-ui) var(--ease-out);
+}
+.details__open:hover {
+  background-color: var(--accent);
+  color: var(--base);
+}
+.details__pending {
+  padding: 13px 0;
+}
+.details__nav {
+  display: flex;
+  gap: 6px;
+}
+.details__nav button {
+  width: 42px;
+  height: 42px;
+  display: grid;
+  place-items: center;
+  border: 1px solid var(--line);
+  transition:
+    border-color var(--dur-ui) var(--ease-out),
+    color var(--dur-ui) var(--ease-out);
+}
+.details__nav button:hover {
+  border-color: var(--accent);
+  color: var(--accent);
+}
+
+/* ---------------------------------------------------------------- показ --- */
+
+.showcase {
+  position: relative;
+  z-index: 2;
+  padding-block: clamp(56px, 9vh, 120px) clamp(32px, 5vh, 72px);
+  display: grid;
+  gap: clamp(48px, 8vh, 110px);
+  background-color: var(--base);
+}
+.showcase__head {
+  display: grid;
+  gap: 10px;
+}
+.showcase__kicker {
+  color: var(--accent);
+}
+.showcase__title {
+  font-size: clamp(28px, 3.4vw, 52px);
+  line-height: 1;
+  letter-spacing: -0.04em;
+  font-weight: 500;
+}
+
+.board {
+  margin: 0;
+  display: grid;
+  gap: clamp(18px, 2.4vw, 32px);
+}
+.board__media {
+  position: relative;
+  overflow: hidden;
+  border-block: 1px solid var(--line);
+}
+.board__media img {
+  width: 100%;
+  height: auto;
+  display: block;
+}
+.board__copy {
+  display: grid;
+  gap: 10px;
+}
+@media (min-width: 900px) {
+  .board__copy {
+    grid-template-columns: 126px minmax(0, 56ch);
+    align-items: start;
+    gap: clamp(20px, 3vw, 44px);
+  }
+}
+.board__num {
+  color: var(--accent);
+  font-variant-numeric: tabular-nums;
+}
+.board__text {
+  font-size: clamp(14px, 0.3vw + 13px, 16px);
+  line-height: 1.6;
+  color: var(--ink-dim);
+}
+
+/* --------------------------------------------------------------- подвал --- */
+
+.site-footer {
+  position: relative;
+  z-index: 2;
+  border-top: 1px solid var(--line);
+  padding-block: clamp(32px, 5vh, 60px);
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 18px;
+}
+.site-footer__note {
+  max-width: 48ch;
+}
+
+/* Дуга на узком экране бессмысленна — кадр уходит вверх фоном, текст под ним. */
+@media (max-width: 899px) {
+  .canvas__arc {
+    inset: 0;
+    clip-path: none;
+  }
+  .canvas__veil {
+    background: linear-gradient(
+      to bottom,
+      color-mix(in srgb, var(--base) 40%, transparent) 0%,
+      var(--base) 62%
+    );
+  }
+  .hero__art {
+    inset: 0;
+    clip-path: none;
+  }
+  .hero__art::after {
+    background: linear-gradient(
+      to bottom,
+      color-mix(in srgb, var(--base) 50%, transparent) 0%,
+      var(--base) 70%
+    );
+  }
+}
+
+/* ------------------------------------------------------ спокойный режим --- */
+
+@media (prefers-reduced-motion: reduce) {
+  html {
+    scroll-behavior: auto;
+  }
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-delay: 0ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+  :root {
+    transition: none;
+  }
+  .grain {
+    display: none;
+  }
+}
